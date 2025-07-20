@@ -6,16 +6,18 @@ USER root
 # dockerクライアントのインストール
 COPY --from=docker:28.2-cli /usr/local/bin/docker /usr/local/bin/docker
 
-RUN which node || curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+RUN which node || (\
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
   apt-get update && \
-  apt-get install -y nodejs
+  apt-get install -y nodejs \
+  )
 
 ARG UID=1000
 ARG GID=1000
 
 # 非特権ユーザの設定
-RUN (getent group ${GID} || groupadd -g ${GID} nonroot) && \
-  (getent passwd ${UID} && /usr/sbin/userdel -r $(getent passwd ${UID} | cut -d: -f1) || true) && \
+RUN (getent passwd ${UID} && /usr/sbin/userdel -r $(getent passwd ${UID} | cut -d: -f1) || true) && \
+  (getent group ${GID} || groupadd -g ${GID} nonroot) && \
   /usr/sbin/useradd -u ${UID} -g ${GID} -m -s /bin/bash nonroot
 
 ARG DOCKER_GID=2375

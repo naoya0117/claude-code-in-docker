@@ -8,7 +8,7 @@ RUN (getent passwd ${UID} && /usr/sbin/userdel -r $(getent passwd ${UID} | cut -
   (getent group ${GID} || groupadd -g ${GID} nonroot) && \
   /usr/sbin/useradd -u ${UID} -g ${GID} -m -s /bin/bash nonroot
 
-RUN mkdir /.npm && chown ${UID}:${GID} /.npm
+RUN  npm config set prefix '~/.npm-global'
 
 USER nonroot
 WORKDIR /www
