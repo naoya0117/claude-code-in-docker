@@ -1,0 +1,56 @@
+# vim: set filetype=yaml.docker-compose :
+# 1. 先にビルドdocker compose build
+# 2. docker compose run --rm www-claude-code
+services:
+  ################################################################################
+  www-image-builder:
+    image: 'www-image'
+    build:
+      context: './www'
+      dockerfile: 'dev.Dockerfile'
+      args:
+        - 'UID=${UID:-1000}'
+        - 'GID=${GID:-1000}'
+
+  www-claude-code:
+    build:
+      context: .
+      dockerfile: 'claude.Dockerfile'
+      args:
+        - 'BASE_IMAGE=www-image'
+        - 'UID=${UID:-1000}'
+        - 'GID=${GID:-1000}'
+    profiles:
+      - 'require-prebuild'
+    depends_on:
+      dind:
+        condition: service_healthy
+    environment:
+      - 'DOCKER_HOST=unix:///var/local/run/docker/docker.sock'
+    volumes:
+      - 'docker-socket-dir:/var/local/run/docker'
+      - 'claude-home-dir:/home/nonroot'
+
+  ############################################################################
+  dind:
+    image: docker:28.2-dind
+    privileged: true
+    environment:
+      - 'DOCKER_HOST=unix:///var/local/run/docker/docker.sock'
+    volumes:
+      - 'docker-socket-dir:/var/local/run/docker'
+      - 'dind-data:/var/lib/docker'
+    healthcheck:
+      test: [ "CMD", "docker", "version" ]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  dind-data:
+    driver: 'local'
+  docker-socket-dir:
+    driver: 'local'
+  claude-home-dir:
+    driver: 'local'
